@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from .cli import greet
+# Use an absolute import so the module works when executed directly
+# via `streamlit run helloapp/app.py` where `__package__` is not set.
+from helloapp.cli import greet
 
 
 def main() -> None:
