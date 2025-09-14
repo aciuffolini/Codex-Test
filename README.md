@@ -1,28 +1,23 @@
-# Codex Test
+# RiskSim
 
-This repository contains a small example Python project called **helloapp**. The
-project provides a command-line interface that prints a friendly greeting.
+RiskSim provides core calculations for livestock risk and profit analysis. The
+package exposes a small API for computing margins, breakeven prices and related
+metrics given production parameters. A simple command line interface is
+available as an example entry point.
 
-## Usage
-
-After installing the package, run the command:
-
-```bash
-helloapp [name]
-```
-
-If `name` is provided, it will print `Hello, <name>!`. Otherwise it defaults to
-`Hello, World!`.
-
-## Web interface
-
-A small Streamlit UI is also available. Install the optional dependencies and
-run the app with:
+## Installation
 
 ```bash
-pip install -e .[ui]
-streamlit run helloapp/app.py
+pip install -e .
 ```
+
+## Command line usage
+
+```bash
+risksim PRECIO_COMPRA PRECIO_VENTA PESO_COMPRA PESO_SALIDA PRECIO_POR_TN CONVERSION MORTANDAD ADPV ESTADIA SANIDAD NUM_CABEZAS
+```
+
+The command will print the margin neto for the provided parameters.
 
 ## Development
 
@@ -32,4 +27,3 @@ Install development dependencies and run the tests with:
 pip install -e .[test]
 pytest
 ```
-
