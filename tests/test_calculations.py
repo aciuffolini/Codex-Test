@@ -1,7 +1,12 @@
 import math
-import sys, os
+import os
+import sys
+
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from risksim.core.calculations import InputParams, compute_profit
+
+from risksim.core.calculations import InputParams, compute_profit, safe_div
 
 
 def default_params() -> InputParams:
@@ -20,21 +25,38 @@ def default_params() -> InputParams:
     )
 
 
-def test_breakeven_compra_zeroes_margin():
-    p = default_params()
-    bk = compute_profit(p).breakeven_compra
-    p2 = InputParams(**{**p.__dict__, "precio_compra": bk})
-    assert math.isclose(compute_profit(p2).margen_neto, 0, abs_tol=1e-6)
+@pytest.mark.parametrize(
+    "field,expected",
+    [
+        ("margen_neto", 53280.0),
+        ("margen_compra_venta", -23000),
+        ("margen_alimentacion", 83980),
+        ("costo_feed_por_kg_gain", 512),
+        ("rent_mensual", 2.2299833048880866),
+        ("rent_anual", 26.759799658657037),
+        ("breakeven_compra", 1216.4),
+        ("breakeven_venta", 719.1739130434783),
+        ("dof", 216.66666666666669),
+        ("total_inversion", 330820.0),
+        ("total_margen_neto", 5274720.0),
+    ],
+)
+def test_compute_profit_formulas(field: str, expected: float) -> None:
+    res = compute_profit(default_params())
+    value = getattr(res, field)
+    assert math.isclose(value, expected, rel_tol=1e-9, abs_tol=1e-9)
 
 
-def test_margen_compra_venta_zero_when_equal_prices():
-    p = default_params()
-    p = InputParams(**{**p.__dict__, "precio_compra": 800, "precio_venta": 800})
-    assert compute_profit(p).margen_compra_venta == 0
-
-
-def test_dof_formula():
-    p = default_params()
-    p = InputParams(**{**p.__dict__, "peso_compra": 200, "peso_salida": 500, "adpv": 1.25})
-    result = compute_profit(p)
-    assert math.isclose(result.dof, (500 - 200) / 1.25)
+@pytest.mark.parametrize(
+    "a,b,expected",
+    [
+        (10, 2, 5),
+        (1, 0, math.nan),
+    ],
+)
+def test_safe_div(a: float, b: float, expected: float) -> None:
+    result = safe_div(a, b)
+    if math.isnan(expected):
+        assert math.isnan(result)
+    else:
+        assert result == expected
