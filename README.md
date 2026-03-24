@@ -1,63 +1,44 @@
-# RiskSim
+# Twin vNext Product Line (Official)
 
-RiskSim provides core calculations for livestock risk and profit analysis. The
-package exposes a small API for computing margins, breakeven prices and related
-metrics given production parameters. A simple command line interface is
-available as an example entry point. Scenarios can be persisted to disk using a
-lightweight JSON repository so that they may be reused or shared.
+This repository is now the **official Twin-centered vNext product line**.
 
-## Installation
+The product center is the Twin core, with two interfaces over the same operational truth:
 
-```bash
-pip install -e .
-```
+- **Human UI** (cockpit paths)
+- **Agent-facing API** (capability façade)
 
-## Command line usage
+## Product invariants
 
-The CLI now exposes a small set of sub-commands:
+These are non-negotiable in this repo:
 
-```bash
-# run a one-off calculation
-risksim run PRECIO_COMPRA PRECIO_VENTA PESO_COMPRA PESO_SALIDA PRECIO_POR_TN CONVERSION MORTANDAD ADPV ESTADIA SANIDAD --num_cabezas 10
+- One canonical workflow only: `start → capture → review/correct → save local → sync → retrieve → ask/reason → decide`.
+- Retrieval before reasoning is required.
+- UI remains thin; business logic stays in controller/service layers.
+- Twin core remains source of truth.
 
-# scenario CRUD operations
-risksim scenario save my-scenario PRECIO_COMPRA PRECIO_VENTA PESO_COMPRA PESO_SALIDA PRECIO_POR_TN CONVERSION MORTANDAD ADPV ESTADIA SANIDAD
-risksim scenario list
-risksim scenario show my-scenario
-risksim scenario delete my-scenario
-```
+## Where the active vNext product lives
 
-`run` prints the margin neto for the provided parameters. Scenarios are stored
-in a JSON file (``scenarios.json`` by default) that can be backed up or shared
-between environments.
+Primary implementation and product docs are under:
 
-## Streamlit UI
+- `next-version/`
+  - `vnext_twin_core/`
+  - `vnext_api/`
+  - `vnext_ui/`
+  - `tests/`
+  - architecture/adoption/merge docs
 
-For an interactive front-end, install the optional ``ui`` dependency and run
+Start with `next-version/README.md` for run and validation commands.
 
-```bash
-streamlit run -m risksim.ui
-```
+## Repository positioning
 
-The sidebar exposes a modal for saving and loading scenarios.
+Legacy/auxiliary code (e.g. the `risksim` package and related tests) remains in-repo for now, but it is **not** the forward product line.
+It is intentionally left untouched in this promotion step to keep diffs small and reversible.
 
-## Schema migrations
+## Manual GitHub rename step (outside Codex)
 
-Scenario files store a ``version`` field that allows the repository to migrate
-older files to the current schema. The ``risksim.storage.migrations`` module
-contains the upgrade logic.
+Codex cannot rename the GitHub repository itself. If desired, perform these manually:
 
-## Backup and restore
-
-Scenario files are ordinary JSON documents. To back up the repository simply
-copy ``scenarios.json`` somewhere safe. Use the ``backup`` and ``restore``
-helpers on ``ScenarioRepository`` if you prefer programmatic control.
-
-## Development
-
-Install development dependencies and run the tests with:
-
-```bash
-pip install -e .[test]
-pytest
-```
+1. GitHub repository rename
+2. Repository description/topics update
+3. Default branch/release policy alignment
+4. CI/workflow naming alignment
