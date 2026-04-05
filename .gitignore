@@ -1,2 +1,20 @@
 __pycache__/
 *.pyc
+*.db
+*.db-shm
+*.db-wal
+
+# Runtime data
+next-version/data/chroma/
+next-version/data/media/
+next-version/data/*.db
+next-version/data/*.json
+
+# Web app
+next-version/web-app/node_modules/
+next-version/web-app/dist/
+next-version/web-app/.vite/
+
+# Environment
+.env
+next-version/gateway/.env

@@ -8,18 +8,24 @@ from __future__ import annotations
 from pathlib import Path
 
 from vnext_twin_core import TwinService
+from vnext_twin_core.store_base import TwinStoreBase
 
 
 class TwinCapabilities:
-    def __init__(self, db_path: Path):
-        self.twin = TwinService(db_path)
+    def __init__(self, db_path: Path | None = None, *, store: TwinStoreBase | None = None):
+        self.twin = TwinService(db_path=db_path, store=store)
 
-    def ingest_visit(self) -> str:
-        return self.twin.start_visit()
+    def create_farm(self, farm_id: str, name: str, kmz_data: str | None = None) -> None:
+        self.twin.store.create_farm(farm_id, name, kmz_data)
 
-    def upload_media(self, visit_id: str, media_uri: str) -> None:
-        # Deferred: dedicated media pipeline. Slice-1 routes through capture flow.
-        self.twin.capture(visit_id, "media_uploaded", media_uri, 0.0, 0.0)
+    def list_farms(self):
+        return self.twin.store.list_farms()
+
+    def ingest_visit(self, farm_id: str | None = None) -> str:
+        return self.twin.start_visit(farm_id=farm_id)
+
+    def upload_media(self, visit_id: str, media_type: str, media_uri: str) -> None:
+        self.twin.upload_media(visit_id, media_type, media_uri)
 
     def sync_event(self, visit_id: str, online: bool):
         return self.twin.sync(visit_id, online)

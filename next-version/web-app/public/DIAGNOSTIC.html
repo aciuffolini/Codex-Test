@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Diagnostic Tool</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .section {
+            background: #252526;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 3px solid #007acc;
+        }
+        .success { border-left-color: #4ec9b0; }
+        .error { border-left-color: #f48771; }
+        .warning { border-left-color: #dcdcaa; }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        button:hover { background: #005a9e; }
+        pre {
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #1e1e1e;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 API Diagnostic Tool</h1>
+    <p>Run this to verify your API configuration is working correctly.</p>
+
+    <div class="section">
+        <h2>1. Configuration Check</h2>
+        <button onclick="checkConfig()">Check Config</button>
+        <div id="config-result" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>2. Test Endpoints</h2>
+        <button onclick="testHealth()">Test /health</button>
+        <button onclick="testVisitsGet()">Test GET /api/visits</button>
+        <button onclick="testVisitsPost()">Test POST /api/visits</button>
+        <button onclick="testChat()">Test POST /api/chat</button>
+        <div id="test-result" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>3. API Key Check</h2>
+        <button onclick="checkApiKey()">Check API Key</button>
+        <input type="text" id="api-key-input" placeholder="Enter API key to test" style="width: 300px; padding: 5px; margin: 5px;">
+        <button onclick="setApiKey()">Set API Key</button>
+        <div id="key-result" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>4. Full Diagnostic</h2>
+        <button onclick="runFullDiagnostic()">Run All Tests</button>
+        <div id="full-result" class="result"></div>
+    </div>
+
+    <script>
+        function log(elementId, message, type = 'info') {
+            const el = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'warning';
+            el.innerHTML += `<div class="${className}" style="margin: 5px 0; padding: 5px;">[${timestamp}] ${message}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function clear(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        async function checkConfig() {
+            clear('config-result');
+            log('config-result', 'Checking configuration...', 'info');
+            
+            // Try to detect API base from current location
+            const currentPort = window.location.port || '5173';
+            const apiBase = '/api';
+            
+            log('config-result', `Current server: http://localhost:${currentPort}`, 'info');
+            log('config-result', `API_BASE will be: ${apiBase}`, 'info');
+            log('config-result', `Expected proxy: ${apiBase} → http://localhost:3000`, 'info');
+            log('config-result', '✅ Using Vite proxy (/api → http://localhost:3000)', 'success');
+        }
+
+        async function testHealth() {
+            clear('test-result');
+            log('test-result', 'Testing /health endpoint...', 'info');
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                if (response.ok) {
+                    log('test-result', `✅ Health check: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    log('test-result', `❌ Health check failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log('test-result', `❌ Health check error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testVisitsGet() {
+            clear('test-result');
+            log('test-result', 'Testing GET /api/visits...', 'info');
+            try {
+                const response = await fetch('/api/visits');
+                const data = await response.json();
+                if (response.ok) {
+                    log('test-result', `✅ Visits GET: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    log('test-result', `❌ Visits GET failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log('test-result', `❌ Visits GET error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testVisitsPost() {
+            clear('test-result');
+            log('test-result', 'Testing POST /api/visits...', 'info');
+            try {
+                const response = await fetch('/api/visits', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: 'test-' + Date.now(),
+                        ts: Date.now(),
+                        field_id: 'test-field',
+                        note: 'Diagnostic test visit',
+                    }),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    log('test-result', `✅ Visits POST: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    log('test-result', `❌ Visits POST failed: ${response.status} ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                log('test-result', `❌ Visits POST error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testChat() {
+            clear('test-result');
+            log('test-result', 'Testing POST /api/chat...', 'info');
+            const apiKey = localStorage.getItem('user_api_key');
+            if (!apiKey) {
+                log('test-result', '⚠️ No API key found. Set one first.', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey,
+                    },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: 'Hello, this is a test' }],
+                    }),
+                });
+                
+                if (!response.ok) {
+                    const text = await response.text();
+                    log('test-result', `❌ Chat POST failed: ${response.status} ${text}`, 'error');
+                    return;
+                }
+                
+                log('test-result', '✅ Chat POST: Streaming response...', 'success');
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let chunkCount = 0;
+                
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value);
+                    chunkCount++;
+                }
+                
+                log('test-result', `✅ Chat stream complete (${chunkCount} chunks)`, 'success');
+            } catch (error) {
+                log('test-result', `❌ Chat POST error: ${error.message}`, 'error');
+            }
+        }
+
+        function checkApiKey() {
+            clear('key-result');
+            const key = localStorage.getItem('user_api_key');
+            if (key) {
+                log('key-result', `✅ API Key found: ${key.substring(0, 10)}...${key.substring(key.length - 4)}`, 'success');
+                log('key-result', `Length: ${key.length} characters`, 'info');
+                if (key.startsWith('"') || key.endsWith('"')) {
+                    log('key-result', '⚠️ WARNING: Key has quotes! This should be auto-stripped.', 'warning');
+                }
+            } else {
+                log('key-result', '❌ No API key found in localStorage', 'error');
+            }
+        }
+
+        function setApiKey() {
+            const input = document.getElementById('api-key-input');
+            const key = input.value.trim();
+            if (key) {
+                // Auto-strip quotes
+                const cleanedKey = key.replace(/^["']|["']$/g, '');
+                localStorage.setItem('user_api_key', cleanedKey);
+                log('key-result', `✅ API key saved: ${cleanedKey.substring(0, 10)}...`, 'success');
+                input.value = '';
+            } else {
+                localStorage.removeItem('user_api_key');
+                log('key-result', '✅ API key cleared', 'success');
+            }
+        }
+
+        async function runFullDiagnostic() {
+            clear('full-result');
+            log('full-result', '🔍 Running full diagnostic...', 'info');
+            log('full-result', '', 'info');
+            
+            // 1. Config
+            log('full-result', '1. Configuration:', 'info');
+            const currentPort = window.location.port || '5173';
+            log('full-result', `   Server: http://localhost:${currentPort}`, 'info');
+            log('full-result', `   API Base: /api (proxied to http://localhost:3000)`, 'success');
+            
+            // 2. API Key
+            log('full-result', '2. API Key:', 'info');
+            const key = localStorage.getItem('user_api_key');
+            log('full-result', `   ${key ? `Found: ${key.substring(0, 10)}...` : 'NOT SET'}`, key ? 'success' : 'warning');
+            
+            // 3. Test endpoints
+            log('full-result', '3. Testing endpoints...', 'info');
+            
+            // Health
+            try {
+                log('full-result', '   Testing /api/health...', 'info');
+                const health = await fetch('/api/health');
+                const healthData = await health.json();
+                log('full-result', `   /api/health: ${health.ok ? '✅' : '❌'} ${health.status} - ${JSON.stringify(healthData)}`, health.ok ? 'success' : 'error');
+            } catch (e) {
+                log('full-result', `   /api/health: ❌ ${e.message}`, 'error');
+                log('full-result', `   Make sure test server is running: node test-server.js`, 'warning');
+            }
+            
+            // Visits GET
+            try {
+                log('full-result', '   Testing GET /api/visits...', 'info');
+                const visits = await fetch('/api/visits');
+                const visitsData = await visits.json();
+                log('full-result', `   GET /api/visits: ${visits.ok ? '✅' : '❌'} ${visits.status}`, visits.ok ? 'success' : 'error');
+            } catch (e) {
+                log('full-result', `   GET /api/visits: ❌ ${e.message}`, 'error');
+            }
+            
+            // Visits POST
+            try {
+                log('full-result', '   Testing POST /api/visits...', 'info');
+                const visitsPost = await fetch('/api/visits', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: 'test-' + Date.now(), ts: Date.now() }),
+                });
+                const postData = await visitsPost.json();
+                log('full-result', `   POST /api/visits: ${visitsPost.ok ? '✅' : '❌'} ${visitsPost.status}`, visitsPost.ok ? 'success' : 'error');
+            } catch (e) {
+                log('full-result', `   POST /api/visits: ❌ ${e.message}`, 'error');
+            }
+            
+            log('full-result', '', 'info');
+            log('full-result', '✅ Diagnostic complete! Check results above.', 'success');
+        }
+    </script>
+</body>
+</html>
+

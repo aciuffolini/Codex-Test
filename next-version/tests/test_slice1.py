@@ -67,7 +67,7 @@ class Slice1Tests(unittest.TestCase):
     def test_api_facade_consistency(self) -> None:
         caps = TwinCapabilities(self.db)
         visit_id = caps.ingest_visit()
-        caps.upload_media(visit_id, "local://b.jpg")
+        caps.upload_media(visit_id, "photo", "local://b.jpg")
         retrieval = caps.retrieve_context(visit_id, "question")
         rec = caps.ask_twin(visit_id, retrieval.event_id, "next")
         self.assertEqual(rec.payload["grounded_by"], retrieval.event_id)

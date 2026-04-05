@@ -5,6 +5,7 @@ from pathlib import Path
 import uuid
 
 from .models import TwinEvent, ContractError
+from .store_base import TwinStoreBase
 from .store import TwinStore
 from .sync import SyncEngine
 from .retrieval import RetrievalService
@@ -12,8 +13,13 @@ from .reasoning import ReasoningService
 
 
 class TwinService:
-    def __init__(self, db_path: Path):
-        self.store = TwinStore(db_path)
+    def __init__(self, db_path: Path | None = None, *, store: TwinStoreBase | None = None):
+        if store is not None:
+            self.store = store
+        elif db_path is not None:
+            self.store = TwinStore(db_path)
+        else:
+            raise ValueError("Either db_path or store must be provided")
         self.sync_engine = SyncEngine(self.store)
         self.retrieval = RetrievalService(self.store)
         self.reasoning = ReasoningService(self.store)
@@ -23,20 +29,27 @@ class TwinService:
         if current not in allowed:
             raise ContractError(f"invalid transition from state={current}; allowed={sorted(allowed)}")
 
-    def start_visit(self) -> str:
+    def start_visit(self, farm_id: str | None = None) -> str:
         visit_id = str(uuid.uuid4())
-        self.store.append(TwinEvent.make("visit_event", visit_id, {"status": "draft"}))
+        self.store.append(TwinEvent.make("visit_event", visit_id, {"status": "draft"}, farm_id=farm_id))
         return visit_id
 
     def capture(self, visit_id: str, observation: str, media_uri: str, lat: float, lon: float) -> None:
         self._require_state(visit_id, {"draft"})
         if not observation.strip():
             raise ContractError("observation is required")
-        if not media_uri.strip():
-            raise ContractError("media_uri is required")
         self.store.append(TwinEvent.make("observation", visit_id, {"text": observation}))
-        self.store.append(TwinEvent.make("media_asset", visit_id, {"local_uri": media_uri, "state": "local_saved"}))
+        if media_uri and not media_uri.startswith("baseline://"):
+            self.store.append(TwinEvent.make("media_asset", visit_id, {"local_uri": media_uri, "state": "local_saved"}))
         self.store.append(TwinEvent.make("location_context", visit_id, {"lat": lat, "lon": lon}))
+
+    def upload_media(self, visit_id: str, media_type: str, uri: str) -> None:
+        self._require_state(visit_id, {"draft", "reviewed"})
+        if not uri.strip():
+            raise ContractError("uri is required")
+        self.store.append(
+            TwinEvent.make("media_asset", visit_id, {"local_uri": uri, "type": media_type, "state": "local_saved"})
+        )
 
     def review_and_correct(self, visit_id: str, corrected_observation: str) -> None:
         self._require_state(visit_id, {"draft"})

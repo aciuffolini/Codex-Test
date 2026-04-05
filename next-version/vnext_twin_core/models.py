@@ -19,7 +19,7 @@ EventType = Literal[
 ]
 
 VISIT_ALLOWED_STATES = {"draft", "reviewed", "finalized"}
-SYNC_ALLOWED_STATUSES = {"queued", "succeeded"}
+SYNC_ALLOWED_STATUSES = {"queued", "in_progress", "succeeded", "failed"}
 
 
 class ContractError(ValueError):
@@ -37,9 +37,10 @@ class TwinEvent:
     visit_id: str
     payload: dict[str, Any]
     ts: str
+    farm_id: str | None = None
 
     @staticmethod
-    def make(event_type: EventType, visit_id: str, payload: dict[str, Any]) -> "TwinEvent":
+    def make(event_type: EventType, visit_id: str, payload: dict[str, Any], farm_id: str | None = None) -> "TwinEvent":
         if not visit_id:
             raise ContractError("visit_id is required")
         if not isinstance(payload, dict):
@@ -50,6 +51,7 @@ class TwinEvent:
             visit_id=visit_id,
             payload=payload,
             ts=utc_now(),
+            farm_id=farm_id,
         )
         event.validate()
         return event
