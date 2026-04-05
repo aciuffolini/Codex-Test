@@ -7,43 +7,95 @@ on:
 
 jobs:
   build:
+    name: Build Android APK
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: next-version/web-app
+
+    permissions:
+      contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: next-version/web-app/package-lock.json
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install web app dependencies
+        working-directory: next-version/web-app
+        run: npm install
 
       - name: Build web assets for Android
+        working-directory: next-version/web-app
         run: npm run build:android
 
-      - name: Sync Capacitor
+      - name: Verify build output
+        run: |
+          if [ ! -f "next-version/web-app/dist/index.html" ]; then
+            echo "dist/index.html not found"
+            ls -la next-version/web-app/dist/ 2>/dev/null || echo "dist directory missing"
+            exit 1
+          fi
+          echo "Web build verified"
+
+      - name: Sync Capacitor Android
+        working-directory: next-version/web-app
         run: npx cap sync android
 
-      - name: Build debug APK
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses 2>&1 | head -20 || true
+        continue-on-error: true
 
-      - name: Upload APK
+      - name: Install required Android components
+        run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" 2>&1 | head -30 || true
+        continue-on-error: true
+
+      - name: Clean Gradle caches
+        run: |
+          rm -rf ~/.gradle/caches/jars-*
+          rm -rf ~/.gradle/caches/transforms-*
+
+      - name: Build debug APK
+        working-directory: next-version/web-app/android
+        run: |
+          set -o pipefail
+          chmod +x gradlew
+          ./gradlew clean --no-daemon 2>&1 | tail -20 || true
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+
+      - name: Upload Gradle log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: next-version/web-app/android/build.log
+          retention-days: 5
+
+      - name: Verify APK exists
+        run: |
+          APK_PATH="next-version/web-app/android/app/build/outputs/apk/debug/app-debug.apk"
+          if [ -f "$APK_PATH" ]; then
+            echo "APK found!"
+            ls -lh "$APK_PATH"
+          else
+            echo "APK not found"
+            find next-version/web-app/android -name "*.apk" -type f || echo "No APK files"
+            exit 1
+          fi
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: farm-visit-app-ii
-          path: next-version/web-app/android/app/build/outputs/apk/debug/*.apk
+          path: next-version/web-app/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
