@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -33,7 +33,9 @@ jobs:
 
       - name: Install web app dependencies
         working-directory: next-version/web-app
-        run: npm install
+        run: |
+          rm -f package-lock.json
+          npm install --legacy-peer-deps
 
       - name: Build web assets for Android
         working-directory: next-version/web-app

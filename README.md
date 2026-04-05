@@ -1,44 +1,68 @@
-# Twin vNext Product Line (Official)
+# Farm Visit App II
 
-This repository is now the **official Twin-centered vNext product line**.
+Multimodal agentic field-visit capture system with offline-first AI, RAG retrieval, and digital twin architecture.
 
-The product center is the Twin core, with two interfaces over the same operational truth:
+## Try it
 
-- **Human UI** (cockpit paths)
-- **Agent-facing API** (capability façade)
+| Channel | Link |
+|---------|------|
+| Web App | [aciuffolini.github.io/Codex-Test](https://aciuffolini.github.io/Codex-Test/) |
+| Android APK | [Download latest APK](https://github.com/aciuffolini/Codex-Test/actions/workflows/build-apk.yml) (Artifacts tab) |
 
-## Product invariants
+Password: ask `aciuffolini@teknal.com.ar`
 
-These are non-negotiable in this repo:
+## Features
 
-- One canonical workflow only: `start → capture → review/correct → save local → sync → retrieve → ask/reason → decide`.
-- Retrieval before reasoning is required.
-- UI remains thin; business logic stays in controller/service layers.
-- Twin core remains source of truth.
+- GPS, camera, microphone capture with offline storage
+- Local AI chat via Llama 3.2 3B (WebGPU, on-device)
+- Cloud AI fallback (GPT-4o mini, Claude)
+- RAG backend with hybrid structured + semantic retrieval (ChromaDB + SQLite)
+- Whisper STT for voice-to-text transcription
+- KMZ/KML farm map overlay
+- Field visit form with auto-sync to RAG database
+- Digital twin event-sourcing core
+- Android APK via Capacitor (side-by-side install as `com.farmvisit.appii`)
 
-## Where the active vNext product lives
+## Architecture
 
-Primary implementation and product docs are under:
+```
+next-version/
+  gateway/          Python FastAPI backend (RAG engine, LLM proxy, CLIP embeddings)
+  web-app/          React + Vite + Tailwind frontend (Capacitor for Android)
+  shared/           TypeScript shared types and schemas
+  vnext_twin_core/  Digital twin core (Python)
+  contracts/        API and event contracts
+```
 
-- `next-version/`
-  - `vnext_twin_core/`
-  - `vnext_api/`
-  - `vnext_ui/`
-  - `tests/`
-  - architecture/adoption/merge docs
+## Run locally
 
-Start with `next-version/README.md` for run and validation commands.
+**Terminal 1 — Gateway:**
+```
+cd next-version
+python -m gateway.app
+```
 
-## Repository positioning
+**Terminal 2 — Web app:**
+```
+cd next-version/web-app
+npm install
+npm run dev
+```
 
-Legacy/auxiliary code (e.g. the `risksim` package and related tests) remains in-repo for now, but it is **not** the forward product line.
-It is intentionally left untouched in this promotion step to keep diffs small and reversible.
+Open http://localhost:5173/
 
-## Manual GitHub rename step (outside Codex)
+## Build Android APK locally
 
-Codex cannot rename the GitHub repository itself. If desired, perform these manually:
+```
+cd next-version/web-app
+npm run build:android
+npx cap sync android
+cd android
+./gradlew assembleDebug
+```
 
-1. GitHub repository rename
-2. Repository description/topics update
-3. Default branch/release policy alignment
-4. CI/workflow naming alignment
+APK at `android/app/build/outputs/apk/debug/app-debug.apk`
+
+## Contact
+
+For access and permissions: **aciuffolini@teknal.com.ar**

@@ -24,11 +24,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Install dependencies
         working-directory: next-version/web-app
-        run: npm install
+        run: |
+          rm -f package-lock.json
+          npm install --legacy-peer-deps
 
       - name: Build web app
         working-directory: next-version/web-app
